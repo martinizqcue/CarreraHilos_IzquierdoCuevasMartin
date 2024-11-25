@@ -4,9 +4,11 @@
  */
 package com.mycompany.carrerahilos_izquierdocuevasmartin;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.GridLayout;
 import java.awt.Image;
@@ -23,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -31,6 +34,8 @@ import javax.swing.JProgressBar;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
+import javax.swing.plaf.ProgressBarUI;
+import javax.swing.plaf.basic.BasicProgressBarUI;
 
 /**
  *
@@ -62,11 +67,12 @@ public class CarreraHilos extends javax.swing.JFrame {
     
     public CarreraHilos() {
         initComponents();
+        
     setTitle("Ejemplo de Fondo con ProgressBar Responsive");
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     setSize(1500, 600);
     setLocationRelativeTo(null);
-    setResizable(true); // Cambié a true para que puedas redimensionar la ventana
+    setResizable(false); // Cambié a true para que puedas redimensionar la ventana
 
     // Panel para contener los componentes visibles
     JPanel panelComponentes = new JPanel();
@@ -172,41 +178,129 @@ private void agregarImagenInteractiva(JPanel panel) {
 
     // Método para agregar las imágenes de los coches
     private void agregarImagenes(JPanel panel) {
-        String[] rutas = {
-            "Resources/cocherojo.png",
-            "Resources/cocheverde.png",
-            "Resources/cocheazul.png",
-            "Resources/cocherosa.png"
-        };
+    String[] rutas = {
+        "Resources/cocherojo.png",
+        "Resources/cocheverde.png",
+        "Resources/cocheazul.png",
+        "Resources/cocherosa.png"
+    };
 
-        int yPos = 50;
-        coches = new JLabel[4];
-        barrasProgreso = new JProgressBar[4];
-        hilosCoches = new Thread[4];
-        posiciones = new AtomicInteger[4];
-        carreraTerminada = new AtomicBoolean(false);
+    int yPos = 50; // Altura inicial para los coches y barras
+    coches = new JLabel[4];
+    barrasProgreso = new JProgressBar[4];
+    hilosCoches = new Thread[4];
+    posiciones = new AtomicInteger[4];
+    carreraTerminada = new AtomicBoolean(false);
 
-        for (int i = 0; i < rutas.length; i++) {
-            try {
-                coches[i] = new JLabel();
-                Image img = ImageIO.read(new File(rutas[i]));
-                img = img.getScaledInstance(180, 80, Image.SCALE_SMOOTH);
-                coches[i].setIcon(new ImageIcon(img));
-                coches[i].setBounds(10, yPos + i * 120, 180, 80);
-                panel.add(coches[i]);
+    // Colores de fondo para las barras de progreso
+    java.awt.Color[] coloresFondo = {
+        java.awt.Color.RED,
+        java.awt.Color.GREEN,
+        java.awt.Color.BLUE,
+        java.awt.Color.PINK
+    };
 
-                barrasProgreso[i] = new JProgressBar(0, 100);
-                barrasProgreso[i].setBounds(200, yPos + i * 120 + 60, 400, 20);
-                barrasProgreso[i].setValue(0);
-                barrasProgreso[i].setStringPainted(true);
-                panel.add(barrasProgreso[i]);
+    for (int i = 0; i < rutas.length; i++) {
+        try {
+            // Crear etiquetas para los coches
+            coches[i] = new JLabel();
+            Image img = ImageIO.read(new File(rutas[i]));
+            img = img.getScaledInstance(180, 80, Image.SCALE_SMOOTH);
+            coches[i].setIcon(new ImageIcon(img));
+            coches[i].setBounds(10, yPos + i * 120, 180, 80);
+            panel.add(coches[i]);
 
-                posiciones[i] = new AtomicInteger(0);
-            } catch (IOException e) {
-                System.out.println("No se pudo cargar la imagen: " + rutas[i]);
+            // Crear barras de progreso
+            barrasProgreso[i] = new JProgressBar(0, 100);
+            barrasProgreso[i].setValue(0);
+            barrasProgreso[i].setStringPainted(true); // Mostrar el porcentaje
+            barrasProgreso[i].setFont(new Font("Arial", Font.BOLD, 12)); // Asegurarse de que el texto sea legible
+
+            // Establecer el color de la barra utilizando setUI para una personalización completa
+            switch (i) {
+                case 0: // Rojo
+                    Color colorRojo = new java.awt.Color(255, 0, 0);
+                    barrasProgreso[i].setUI(crearProgressBarUI(colorRojo, new java.awt.Color(255, 200, 200), oscurecerColor(colorRojo)));
+                    break;
+                case 1: // Verde
+                    Color colorVerde = new java.awt.Color(0, 255, 0);
+                    barrasProgreso[i].setUI(crearProgressBarUI(colorVerde, new java.awt.Color(200, 255, 200), oscurecerColor(colorVerde)));
+                    break;
+                case 2: // Azul
+                    Color colorAzul = new java.awt.Color(0, 0, 255);
+                    barrasProgreso[i].setUI(crearProgressBarUI(colorAzul, new java.awt.Color(200, 200, 255), oscurecerColor(colorAzul)));
+                    break;
+                case 3: // Rosa
+                    Color colorRosa = new java.awt.Color(255, 0, 255);
+                    barrasProgreso[i].setUI(crearProgressBarUI(colorRosa, new java.awt.Color(255, 200, 255), oscurecerColor(colorRosa)));
+                    break;
             }
+
+            // Posicionar las barras de progreso justo debajo de los coches
+            barrasProgreso[i].setBounds(200, yPos + i * 120 + 100, getWidth() - 220, 20); // Ajustar ancho dinámico
+            panel.add(barrasProgreso[i]);
+
+            // Inicializar posiciones de progreso
+            posiciones[i] = new AtomicInteger(0);
+        } catch (IOException e) {
+            System.out.println("No se pudo cargar la imagen: " + rutas[i]);
         }
     }
+
+    // Actualizar el panel después de agregar los elementos
+    panel.revalidate();
+    panel.repaint();
+}
+
+// Método para crear un ProgressBarUI con colores personalizados
+private ProgressBarUI crearProgressBarUI(final Color colorPrimerPlano, final Color colorFondo, final Color colorTexto) {
+    return new BasicProgressBarUI() {
+        @Override
+        public void paintDeterminate(Graphics g, JComponent c) {
+            super.paintDeterminate(g, c);
+            JProgressBar barraProgreso = (JProgressBar) c;
+            int anchoBarra = barraProgreso.getWidth();
+            int alturaBarra = barraProgreso.getHeight();
+
+            // Dibujar el fondo de la barra de progreso
+            g.setColor(colorFondo);
+            g.fillRect(0, 0, anchoBarra, alturaBarra);
+
+            // Dibujar el progreso
+            int anchoProgreso = (int) (anchoBarra * barraProgreso.getPercentComplete());
+            g.setColor(colorPrimerPlano);
+            g.fillRect(0, 0, anchoProgreso, alturaBarra);
+
+            // Dibujar el texto del porcentaje directamente en la barra
+            String textoPorcentaje = barraProgreso.getString();
+            if (textoPorcentaje != null && !textoPorcentaje.isEmpty()) {
+                g.setColor(colorTexto); // Usar el color oscuro del porcentaje
+                g.setFont(new Font("Arial", Font.BOLD, 12)); // Fuente legible
+                FontMetrics fm = g.getFontMetrics();
+                int anchoTexto = fm.stringWidth(textoPorcentaje);
+                int alturaTexto = fm.getAscent();
+
+                // Centrar el texto
+                g.drawString(textoPorcentaje, (anchoBarra - anchoTexto) / 2, (alturaBarra + alturaTexto) / 2 - 2);
+            }
+        }
+    };
+}
+
+// Método para oscurecer el color original
+private Color oscurecerColor(Color color) {
+    int rojo = (int) (color.getRed() * 0.7);
+    int verde = (int) (color.getGreen() * 0.7);
+    int azul = (int) (color.getBlue() * 0.7);
+    
+    // Asegurarse de que no se pase de 0 para cada componente de color
+    rojo = Math.max(rojo, 0);
+    verde = Math.max(verde, 0);
+    azul = Math.max(azul, 0);
+    
+    return new Color(rojo, verde, azul);
+}
+
     // Método para iniciar la carrera
     private void iniciarCarrera() {
         etiquetaImagen.setVisible(false);
@@ -283,20 +377,38 @@ private void agregarImagenInteractiva(JPanel panel) {
     int width = getWidth();
     int height = getHeight();
 
-    // Ajustar el JTextField y el botón de distancia a la izquierda de la ventana
-    inputDistancia.setBounds(10, height - 90, 100, 30);  // Colocado en el borde izquierdo con un pequeño margen
-    botonAplicar.setBounds(120, height - 90, 150, 30);    // El botón se coloca al lado del JTextField
+    // Ajustar el JTextField y el botón
+    inputDistancia.setBounds(10, height - 100, 100, 30);
+    botonAplicar.setBounds(120, height - 100, 150, 30);
 
-    // Ajustar la imagen interactiva
-    int nuevaAnchuraImagen = (int) (width * 0.33);  // Ajustar la imagen a un porcentaje del nuevo ancho
-    int nuevaAlturaImagen = nuevaAnchuraImagen / 2; // Mantener la relación de aspecto
-    etiquetaImagen.setBounds((width - nuevaAnchuraImagen) / 2, (height - nuevaAlturaImagen) / 2, nuevaAnchuraImagen, nuevaAlturaImagen);
+    // Calcular el nuevo tamaño de la imagen
+    int nuevaAnchuraImagen = (int) (width * 0.4);  // La imagen ocupa el 40% del ancho de la ventana
+    int nuevaAlturaImagen = (int) (nuevaAnchuraImagen * 0.5); // Mantener la relación de aspecto 2:1
 
-    // Ajustar las posiciones de los coches y barras de progreso
-    for (int i = 0; i < 4; i++) {
-        barrasProgreso[i].setBounds(200, 50 + i * 120 + 60, (int) (width * 0.4), 20); // Ajustar el tamaño de las barras de progreso
+    // Redimensionar la imagen
+    ImageIcon iconoOriginal = new ImageIcon("Resources/correr.png");
+    Image imagenEscalada = iconoOriginal.getImage().getScaledInstance(nuevaAnchuraImagen, nuevaAlturaImagen, Image.SCALE_SMOOTH);
+    ImageIcon iconoEscalado = new ImageIcon(imagenEscalada);
+
+    // Actualizar el JLabel con la imagen escalada
+    etiquetaImagen.setIcon(iconoEscalado);
+    etiquetaImagen.setBounds(
+        (width - nuevaAnchuraImagen) / 2, // Centrar horizontalmente
+        (height - nuevaAlturaImagen) / 2, // Centrar verticalmente
+        nuevaAnchuraImagen,
+        nuevaAlturaImagen
+    );
+
+    // Ajustar las barras de progreso
+    for (int i = 0; i < barrasProgreso.length; i++) {
+        int barraAncho = (int) (width * 0.5); // Ocupa el 50% del ancho de la ventana
+        int barraX = (width - barraAncho) / 2; // Centrar las barras horizontalmente
+        int barraY = 50 + i * 120 + 100; // Posición vertical debajo de los coches ajustada
+        barrasProgreso[i].setBounds(barraX, barraY, barraAncho, 20); // Aplicar las dimensiones calculadas
     }
 }
+
+
 
 
 
